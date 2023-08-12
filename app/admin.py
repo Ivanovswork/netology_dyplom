@@ -16,10 +16,9 @@ class AddUserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'name', 'last_name')
+        fields = ('email',)
 
     def clean_password2(self):
-        # Check that the two password entries match
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
         if password1 and password2 and password1 != password2:
@@ -35,28 +34,17 @@ class AddUserForm(forms.ModelForm):
         return user
 
 
-class UpdateUserForm(forms.ModelForm):
-    password = ReadOnlyPasswordHashField()
-
-    class Meta:
-        model = User
-        fields = (
-            'email', 'password', 'name', 'last_name', 'is_staff'
-        )
-
-    def clean_password(self):
-        return self.initial["password"]
-
-
+@admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    form = UpdateUserForm
-    add_form = AddUserForm
 
-    list_display = ('email', 'name', 'last_name', 'is_staff', 'is_superuser')
+    model = User
+    form = AddUserForm
+
+    list_display = ('email', 'is_staff', 'is_superuser')
     list_filter = ('is_staff',)
-    search_fields = ('email', 'name', 'last_name')
-    ordering = ('email', 'name', 'last_name')
+    search_fields = ('email',)
+    ordering = ('email',)
     filter_horizontal = ()
 
 
-admin.site.register(User, UserAdmin)
+

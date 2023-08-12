@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db.models import CASCADE
-from django.contrib.postgres.fields import JSONField
+from django.contrib.auth.models import PermissionsMixin
 
 
 STATE_CHOICES = (
@@ -18,6 +18,9 @@ STATE_CHOICES = (
 
 
 class UserManager(BaseUserManager):
+
+    use_in_migrations = True
+
     def _create_user(self, email, password, **extra_fields):
 
         if not email:
@@ -27,7 +30,8 @@ class UserManager(BaseUserManager):
 
         user = self.model(
             email=self.normalize_email(email),
-            password=password
+            password=password,
+            **extra_fields
         )
 
         user.set_password(password)
@@ -38,28 +42,34 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
 
-        return self._create_user(self, email, password, **extra_fields)
+        return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
 
-        return self._create_user(self, email, password, **extra_fields)
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self._create_user(email, password, **extra_fields)
 
 
-class User(AbstractUser):
+class User(AbstractUser, PermissionsMixin):
     objects = UserManager()
 
-    email = models.EmailField(verbose_name="Почта", null=False, unique=True)
+    email = models.EmailField(verbose_name="email", null=False, unique=True)
     username_validator = UnicodeUsernameValidator()
-    name = models.CharField(max_length=50, validators=[username_validator], blank=True)
-    last_name = models.CharField(max_length=50, validators=[username_validator], blank=True)
+    username = models.CharField(max_length=50, validators=[username_validator], blank=True)
+    is_active = models.BooleanField(default=False)
 
-    is_staff = models.BooleanField(verbose_name="Cтатус причастности к магазинам")
-    is_superuser = models.BooleanField(verbose_name="Cтатус причастности к администраторам")
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return f"{self.email} {self.name} {self.last_name}"
+        return f"{self.email} {self.first_name} {self.last_name}"
 
 
 class Shop(models.Model):
