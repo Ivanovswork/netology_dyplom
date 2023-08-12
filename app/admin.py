@@ -16,7 +16,7 @@ class AddUserForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name')
+        fields = ('email', 'name', 'last_name')
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -54,8 +54,8 @@ class UserAdmin(BaseUserAdmin):
 
     list_display = ('email', 'name', 'last_name', 'is_staff', 'is_superuser')
     list_filter = ('is_staff',)
-    search_fields = ('email', 'first_name', 'last_name')
-    ordering = ('email', 'first_name', 'last_name')
+    search_fields = ('email', 'name', 'last_name')
+    ordering = ('email', 'name', 'last_name')
     filter_horizontal = ()
 
 
