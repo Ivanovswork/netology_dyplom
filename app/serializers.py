@@ -1,5 +1,6 @@
+from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
-from .models import Shop
+from .models import Shop, Category
 
 
 class ShopSerializer(ModelSerializer):
@@ -10,3 +11,10 @@ class ShopSerializer(ModelSerializer):
             'name',
             'status',
         ]
+
+
+class CategorySerializer(ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
