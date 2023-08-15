@@ -57,12 +57,25 @@ class UserManager(BaseUserManager):
         return self._create_user(email, password, **extra_fields)
 
 
+class Shop(models.Model):
+    name = models.CharField(max_length=30, null=False, verbose_name="Название")
+    status = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Магазин"
+        verbose_name_plural = "Список магазинов"
+
+    def __str__(self):
+        return self.name
+
+
 class User(AbstractUser, PermissionsMixin):
     objects = UserManager()
 
     email = models.EmailField(verbose_name="email", null=False, unique=True)
     username_validator = UnicodeUsernameValidator()
     username = models.CharField(max_length=50, validators=[username_validator], blank=True)
+    company_id = models.IntegerField(blank=True, null=True)
     is_active = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
@@ -70,24 +83,6 @@ class User(AbstractUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} {self.first_name} {self.last_name}"
-
-
-class Shop(models.Model):
-    name = models.CharField(max_length=30, null=False, verbose_name="Название")
-    url = models.URLField(max_length=256, null=False, verbose_name="Cсылка")
-    status = models.BooleanField(default=True)
-    load_file_name = models.FilePathField(
-        path="/python-final-diplom-Ivanovswork/data",
-        verbose_name="Абсолютный путь к загрузочному фалу"
-    )
-
-    class Meta:
-        verbose_name = "Магазин"
-        verbose_name_plural = "Список магазинов"
-
-
-    def __str__(self):
-        return self.name
 
 
 class Category(models.Model):

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from .models import User
+from .models import User, Shop
 
 
 class AddUserForm(forms.ModelForm):
@@ -40,11 +40,14 @@ class UserAdmin(BaseUserAdmin):
     model = User
     form = AddUserForm
 
-    list_display = ('email', 'is_staff', 'is_superuser')
+    list_display = ('email', 'is_staff', 'is_superuser', 'company_id')
     list_filter = ('is_staff',)
-    search_fields = ('email',)
+    search_fields = ('email', 'company_id')
     ordering = ('email',)
     filter_horizontal = ()
 
 
+@admin.register(Shop)
+class ShopAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'status']
 

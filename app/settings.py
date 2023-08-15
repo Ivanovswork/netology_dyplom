@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-$m-3n&_qqe)!+#dz@vhweuuw+bpy(7gyrudphho_kf3$vzphc)"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     'rest_framework',
+    'rest_framework.authtoken',
     'app',
 
 ]
@@ -131,13 +132,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'app.User'
 
 
-# class DisableMigrations(object):
-#
-#     def __contains__(self, item):
-#         return True
-#
-#     def __getitem__(self, item):
-#         return "notmigartions"
-#
-#
-# MIGRATION_MODULS = DisableMigrations()
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+       'rest_framework.authentication.TokenAuthentication',
+   ],
+}
