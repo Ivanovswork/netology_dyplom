@@ -87,12 +87,11 @@ class User(AbstractUser, PermissionsMixin):
 
 class Category(models.Model):
     name = models.CharField(verbose_name="Название", max_length=255, blank=False)
-    shop = models.ManyToManyField(Shop, verbose_name="Соответсвующие магазины", related_name="categories")
+    shop = models.ManyToManyField(Shop, related_name="categories")
 
     class Meta:
         verbose_name = "Категория"
-        verbose_name_plural = "Список категори"
-
+        verbose_name_plural = "Список категорий"
 
     def __str__(self):
         return self.name
@@ -129,6 +128,7 @@ class ProductInfo(models.Model):
         related_name="products",
         on_delete=CASCADE
     )
+    model = models.CharField(max_length=255, verbose_name="Модель", null=False, blank=False, default='null')
     price = models.PositiveIntegerField(verbose_name="Цена", null=False, blank=False)
     quantity = models.PositiveIntegerField(verbose_name="Количество", null=False, blank=False)
     params = models.JSONField()

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from .models import User, Shop
+from .models import User, Shop, Category, Product, ProductInfo
 
 
 @admin.action(description="Поменять статус 'is_staff'")
@@ -44,7 +44,6 @@ class AddUserForm(forms.ModelForm):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-
     model = User
     form = AddUserForm
 
@@ -60,3 +59,20 @@ class UserAdmin(BaseUserAdmin):
 class ShopAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'status']
 
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name']
+
+
+class ProductInline(admin.TabularInline):
+    model = ProductInfo
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name']
+    inlines = [ProductInline, ]
+
+
+admin.site.register(ProductInfo)
