@@ -54,10 +54,5 @@ class UserRGSTRSerializer(ModelSerializer):
             user.save()
             token = Token.objects.create(user=user)
             token.save()
+
             return user
-
-
-class UserLoginSerializer(ModelSerializer):
-    model = User
-
-    fields = ['username', 'password']

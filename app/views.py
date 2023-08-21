@@ -1,5 +1,3 @@
-import json
-
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -10,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from .models import Shop, Product, Category, ProductInfo, Param, User
-from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer, UserLoginSerializer
+from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer
 from .permissions import GetShop, IsSuperuser, IsStaff
 from rest_framework.authtoken.models import Token
 import yaml
@@ -78,14 +76,12 @@ class RegistrUserView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        serializer = UserRGSTRSerializer(data=request.data)
+        user = UserRGSTRSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-
-            return Response({'request': 'True'}, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors)
+        if user.is_valid():
+            user = user.save()
+            return Response({'Информация': 'Регистрация прошла успешно'}, status=status.HTTP_200_OK)
+        return Response(user.errors)
 
 
 @api_view(['POST'])
@@ -122,3 +118,24 @@ def logout(request, *args, **kwargs):
         except Exception as e:
             return Response({'Ошибка.': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(["GET"])
+def get_product_info(request, product_id):
+    try:
+        product = list(Product.objects.filter(id=product_id))[0]
+    except:
+        return Response({'Ошибка': 'Данный товар не найден.'}, status=status.HTTP_404_NOT_FOUND)
+    prinf = list(ProductInfo.objects.filter(product=product))[0]
+    data = {
+        "id": product.id,
+        "name": product.name,
+        "shop": prinf.shop.name,
+        "model": prinf.model,
+        "price": prinf.price,
+        "quantity": prinf.quantity,
+        "parameters": {}
+    }
+    params = list(Param.objects.filter(product=product))
+    for param in params:
+        data["parameters"][param.name] = param.value
+    return Response(data)
