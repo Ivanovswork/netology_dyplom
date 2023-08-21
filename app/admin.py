@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from .models import User, Shop, Category, Product, ProductInfo
+from .models import User, Shop, Category, Product, ProductInfo, Param
 
 
 @admin.action(description="Поменять статус 'is_staff'")
@@ -13,25 +13,25 @@ def change_is_staff(modeladmin, request, queryset):
     else:
         queryset.update(is_staff=True)
 
-
-class AddUserForm(forms.ModelForm):
-    password1 = forms.CharField(
-        label='Password', widget=forms.PasswordInput
-    )
-    password2 = forms.CharField(
-        label='Confirm password', widget=forms.PasswordInput
-    )
-
-    class Meta:
-        model = User
-        fields = ('email',)
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Пароли не совпадают")
-        return password2
+#
+# class AddUserForm(forms.ModelForm):
+#     password1 = forms.CharField(
+#         label='Password', widget=forms.PasswordInput
+#     )
+#     password2 = forms.CharField(
+#         label='Confirm password', widget=forms.PasswordInput
+#     )
+#
+#     class Meta:
+#         model = User
+#         fields = ('email',)
+#
+#     def clean_password2(self):
+#         password1 = self.cleaned_data.get("password1")
+#         password2 = self.cleaned_data.get("password2")
+#         if password1 and password2 and password1 != password2:
+#             raise forms.ValidationError("Пароли не совпадают")
+#         return password2
     #
     # def save(self, commit=True):
     #
@@ -45,13 +45,20 @@ class AddUserForm(forms.ModelForm):
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-    form = AddUserForm
 
     list_display = ('email', 'is_staff', 'is_superuser', 'company_id')
-    list_filter = ('is_staff',)
-    search_fields = ('email', 'company_id')
-    ordering = ('email',)
-    filter_horizontal = ()
+    # list_filter = ('is_staff',)
+    # search_fields = ('email', 'company_id')
+    # ordering = ('email',)
+    # filter_horizontal = ()
+    fieldsets = (
+        (None, {'fields': ('email', 'password', 'company_id')}),
+        ('Personal info', {'fields': ('first_name', 'last_name')}),
+        ('Permissions', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
     actions = [change_is_staff]
 
 
@@ -69,10 +76,17 @@ class ProductInline(admin.TabularInline):
     model = ProductInfo
 
 
+class ParamInline(admin.TabularInline):
+    model = Param
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['id', 'name']
-    inlines = [ProductInline, ]
+    inlines = [ProductInline, ParamInline]
 
 
 admin.site.register(ProductInfo)
+admin.site.register(Param)
+# class ProductInfoAdmin(admin.ModelAdmin):
+#     inlines = [ProductInfoInline]

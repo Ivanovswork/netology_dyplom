@@ -69,17 +69,22 @@ class Shop(models.Model):
         return self.name
 
 
-class User(AbstractUser, PermissionsMixin):
+class User(AbstractUser):
     objects = UserManager()
 
     email = models.EmailField(verbose_name="email", null=False, unique=True)
     username_validator = UnicodeUsernameValidator()
     username = models.CharField(max_length=50, validators=[username_validator], blank=True)
     company_id = models.IntegerField(blank=True, null=True)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Список пользователей"
 
     def __str__(self):
         return f"{self.email} {self.first_name} {self.last_name}"
@@ -131,14 +136,24 @@ class ProductInfo(models.Model):
     model = models.CharField(max_length=255, verbose_name="Модель", null=False, blank=False, default='null')
     price = models.PositiveIntegerField(verbose_name="Цена", null=False, blank=False)
     quantity = models.PositiveIntegerField(verbose_name="Количество", null=False, blank=False)
-    params = models.JSONField()
-
 
     class Meta:
         verbose_name = "Информация о товаре"
+        verbose_name_plural = "Список доп. информации"
 
     def __str__(self):
         return f"{self.product.name} из {self.shop.name}"
+
+
+class Param(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Имя параметра")
+    value = models.CharField(max_length=100, verbose_name="Значение параметра")
+    product = models.ForeignKey(Product, related_name="params", on_delete=CASCADE, blank=False, null=True)
+
+
+    class Meta:
+        verbose_name = "Параметр"
+        verbose_name_plural = "Список параметров"
 
 
 class Contact(models.Model):
