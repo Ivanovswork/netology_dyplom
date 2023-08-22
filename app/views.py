@@ -1,3 +1,4 @@
+from django.conf.global_settings import EMAIL_HOST_USER
 from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
@@ -7,11 +8,12 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from .models import Shop, Product, Category, ProductInfo, Param, User
+from .models import Shop, Product, Category, ProductInfo, Param, User, ConfirmEmailKey
 from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer
 from .permissions import GetShop, IsSuperuser, IsStaff
 from rest_framework.authtoken.models import Token
 import yaml
+from django.core.mail import send_mail
 
 
 class ShopViewSet(ModelViewSet):
@@ -80,8 +82,33 @@ class RegistrUserView(APIView):
 
         if user.is_valid():
             user = user.save()
+            key = ConfirmEmailKey(user=user)
+            key.save()
+
+            send_mail(
+                "destira@mail.ru",
+                f"http://127.0.0.1:8000/confirm/{key.key}/",
+                EMAIL_HOST_USER,
+                ["netology_dyplom@mail.ru"],
+                fail_silently=False,
+            )
+
             return Response({'Информация': 'Регистрация прошла успешно'}, status=status.HTTP_200_OK)
         return Response(user.errors)
+
+
+@api_view()
+def confirm_email(request, key, *args, **kwargs):
+    try:
+        user_key = ConfirmEmailKey.objects.filter(key=key).first()
+        user = user_key.user
+        user.is_active = True
+        user.save()
+        return Response({'Информация': 'Вы успешно подтвердили email'}, status=status.HTTP_200_OK)
+    except:
+        return Response({'Ошибка': 'Пользователь с таким ключем не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+
 
 
 @api_view(['POST'])

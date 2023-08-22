@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from .models import User, Shop, Category, Product, ProductInfo, Param
+from .models import User, Shop, Category, Product, ProductInfo, Param, ConfirmEmailKey
 
 
 @admin.action(description="Поменять статус 'is_staff'")
@@ -46,7 +46,7 @@ def change_is_staff(modeladmin, request, queryset):
 class UserAdmin(BaseUserAdmin):
     model = User
 
-    list_display = ('email', 'is_staff', 'is_superuser', 'company_id')
+    list_display = ('email', 'is_staff', 'is_superuser', 'company_id', 'is_active')
     # list_filter = ('is_staff',)
     # search_fields = ('email', 'company_id')
     # ordering = ('email',)
@@ -88,5 +88,5 @@ class ProductAdmin(admin.ModelAdmin):
 
 admin.site.register(ProductInfo)
 admin.site.register(Param)
-# class ProductInfoAdmin(admin.ModelAdmin):
-#     inlines = [ProductInfoInline]
+admin.site.register(ConfirmEmailKey)
+

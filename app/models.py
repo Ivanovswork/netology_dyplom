@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db.models import CASCADE
-from django.contrib.auth.models import PermissionsMixin
+from django_rest_passwordreset.tokens import get_token_generator
 
 
 STATE_CHOICES = (
@@ -76,7 +76,7 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator()
     username = models.CharField(max_length=50, validators=[username_validator], blank=True)
     company_id = models.IntegerField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -205,4 +205,25 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"Пункт заказа №{self.order.id} под общим номером {self.id}"
 
+
+class ConfirmEmailKey(models.Model):
+    @staticmethod
+    def generate_key():
+        return get_token_generator().generate_token()
+
+    user = models.ForeignKey(User, related_name="key", on_delete=CASCADE)
+    key = models.CharField(verbose_name="Ключ подтверждения", null=True, blank=True)
+
+
+    class Meta:
+        verbose_name = "Ключ подтвердения"
+        verbose_name_plural = "Ключи подтверждения"
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        return super(ConfirmEmailKey, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Ключ подтверждения {self.key} пользователя {self.user.email}"
 
