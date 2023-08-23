@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, CharField, ValidationError
-from .models import Shop, Category, Product, User
+from .models import Shop, Category, Product, User, Contact
 from rest_framework.authtoken.models import Token
 
 
@@ -56,3 +56,11 @@ class UserRGSTRSerializer(ModelSerializer):
             token.save()
 
             return user
+
+
+class UserContactSerializer(ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ["user", "adress", "t_number"]
+
+        read_only_fields = ["user"]

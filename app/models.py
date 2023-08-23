@@ -150,10 +150,12 @@ class Param(models.Model):
     value = models.CharField(max_length=100, verbose_name="Значение параметра")
     product = models.ForeignKey(Product, related_name="params", on_delete=CASCADE, blank=False, null=True)
 
-
     class Meta:
         verbose_name = "Параметр"
         verbose_name_plural = "Список параметров"
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class Contact(models.Model):
@@ -164,8 +166,14 @@ class Contact(models.Model):
         on_delete=CASCADE
     )
     adress = models.CharField(verbose_name="Адрес", max_length=255, blank=True)
-    t_number = models.CharField(blank=True)
+    t_number = models.CharField(verbose_name="Телефонный номер", blank=True)
 
+    class Meta():
+        verbose_name = "Контактная информация"
+        verbose_name_plural = "Контактная информация"
+
+    def __str__(self):
+        return f"{self.user.email}"
 
 
 class Order(models.Model):

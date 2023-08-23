@@ -8,9 +8,11 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from .models import Shop, Product, Category, ProductInfo, Param, User, ConfirmEmailKey
-from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer
+from .models import Shop, Product, Category, ProductInfo, Param, User, ConfirmEmailKey, Contact
+from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer, \
+    UserContactSerializer
 from .permissions import GetShop, IsSuperuser, IsStaff
+from .forms import ContactForm
 from rest_framework.authtoken.models import Token
 import yaml
 from django.core.mail import send_mail
@@ -109,8 +111,6 @@ def confirm_email(request, key, *args, **kwargs):
         return Response({'Ошибка': 'Пользователь с таким ключем не найден'}, status=status.HTTP_404_NOT_FOUND)
 
 
-
-
 @api_view(['POST'])
 def login(request, *args, **kwargs):
     if request.method == 'POST':
@@ -166,3 +166,72 @@ def get_product_info(request, product_id):
     for param in params:
         data["parameters"][param.name] = param.value
     return Response(data)
+
+
+class UserContactView(APIView):
+    queryset = Contact.objects.all()
+    serializer_class = UserContactSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        contact = Contact.objects.filter(user=user).first()
+        if contact:
+            return Response({
+                "user_id": contact.user.id,
+                "username": contact.user.email,
+                "adress": contact.adress,
+                "telephone_number": contact.t_number
+            })
+        else:
+            return Response({"Информация": "Ваши контактные данные не указаны"})
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        contact = Contact.objects.filter(user=user)
+        if contact:
+            return Response({"Информация": "У вас уже имеется контактная информация"})
+        else:
+            data = request.data
+            form = ContactForm(data)
+            if form.is_valid():
+                try:
+                    contact = Contact(user=user, adress=data["adress"], t_number=data["t_number"])
+                    contact.save()
+                except:
+                    return Response({"status": "Bad request"})
+            else:
+                return Response({"status": "Bad request"})
+
+            return Response({"status": "OK"})
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        contact = Contact.objects.filter(user=user)
+        print(contact.first().adress)
+        if not contact:
+            return Response({"Информация": "Изменять нечего"})
+        else:
+            data = request.data
+            form = ContactForm(data)
+            if form.is_valid():
+                try:
+                    contact.update(adress=data["adress"], t_number=data["t_number"])
+                except:
+                    return Response({"status": "Bad request"})
+            else:
+                return Response({"status": "Bad request"})
+
+            return Response({"status": "OK"})
+
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        contact = Contact.objects.filter(user=user)
+        if not contact:
+            return Response({"Информация": "У вас нет контактной информации"})
+        else:
+            try:
+                contact.delete()
+            except:
+                return Response({"status": "Bad request"})
+        return Response({"status": "OK"})
