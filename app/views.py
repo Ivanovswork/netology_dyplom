@@ -8,11 +8,11 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from .models import Shop, Product, Category, ProductInfo, Param, User, ConfirmEmailKey, Contact
+from .models import Shop, Product, Category, ProductInfo, Param, User, ConfirmEmailKey, Contact, Order, OrderItem
 from .serializers import ShopSerializer, CategorySerializer, ProductSerializer, UserRGSTRSerializer, \
     UserContactSerializer
 from .permissions import GetShop, IsSuperuser, IsStaff
-from .forms import ContactForm
+from .forms import ContactForm, OrderItemForm, OrderItemUpdateForm
 from rest_framework.authtoken.models import Token
 import yaml
 from django.core.mail import send_mail
@@ -235,3 +235,92 @@ class UserContactView(APIView):
             except:
                 return Response({"status": "Bad request"})
         return Response({"status": "OK"})
+
+
+class BasketView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        basket = list(Order.objects.filter(user=user, state='basket'))[-1]
+        if basket:
+            orderitems = OrderItem.objects.filter(order=basket)
+            response = {}
+            for i, elem in enumerate(orderitems):
+                response[i + 1] = {
+                    "id": elem.product_info.product.id,
+                    "name": elem.product_info.product.name,
+                    "category": elem.product_info.product.category.name,
+                    "shop": elem.product_info.shop.name,
+                    "quantity": elem.quantity,
+                    "model": elem.product_info.model,
+                    "price": elem.product_info.price,
+                }
+            return Response(response)
+        else:
+            return Response({"status": "No Items"})
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        orders = Order.objects.filter(user=user, state='basket')
+        if orders:
+            basket = list(orders)[-1]
+        else:
+            contact = list(Contact.objects.filter(user=user))[0]
+            basket = Order(
+                user=user,
+                state="basket",
+                contact=contact
+            )
+            basket.save()
+        data = request.data
+        form = OrderItemForm(data)
+
+        if form.is_valid():
+            productinfo = ProductInfo.objects.filter(id=data['product_info']).first()
+            if OrderItem.objects.filter(order=basket, product_info=productinfo):
+                return Response({"status": "Bad request", "Reason": "Product has already been in basket"})
+            quantity = data['quantity']
+            if quantity > productinfo.quantity:
+                return Response({"status": "Bad request", "Reason": "Quantity"})
+            orderitem = OrderItem(
+                order=basket,
+                product_info=productinfo,
+                quantity=quantity
+            )
+            orderitem.save()
+            return Response({"status": "OK"})
+        else:
+            return Response({"status": "Bad request"})
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        basket = list(Order.objects.filter(user=user, state='basket'))[-1]
+        if basket:
+            data = request.data
+            form = OrderItemUpdateForm(data)
+            if form.is_valid():
+                order_item = OrderItem.objects.filter(id=data['orderitem_id']).first()
+                if not(order_item):
+                    return Response({"status": "Bad request", "Reason": "bad order item id"})
+                if order_item.order != basket:
+                    return Response({"status": "Bad request", "Reason": "bad order item id"})
+                quantity = data['quantity']
+                if quantity > order_item.product_info.quantity:
+                    return Response({"status": "Bad request", "Reason": "Quantity"})
+                order_item.quantity = quantity
+                order_item.save()
+                return Response({"status": "OK"})
+            else:
+                return Response({"status": "Bad request"})
+        else:
+            return Response({"status": "No Items"})
+
+    def delete(self, request, *args, **kwargs):
+        user = request.user
+        basket = list(Order.objects.filter(user=user, state='basket'))[-1]
+        if basket:
+            OrderItem.objects.filter(order=basket).delete()
+            return Response({"status": "OK"})
+        else:
+            return Response({"status": "No Items"})

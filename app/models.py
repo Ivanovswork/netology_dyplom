@@ -161,7 +161,7 @@ class Param(models.Model):
 class Contact(models.Model):
     user = models.ForeignKey(
         User,
-        verbose_name="Заказ",
+        verbose_name="Пользователь",
         related_name="user",
         on_delete=CASCADE
     )
@@ -206,6 +206,7 @@ class OrderItem(models.Model):
         on_delete=CASCADE
     )
 
+    quantity = models.PositiveIntegerField(verbose_name="Количество товара", default=1, blank=False, null=False)
 
     class Meta():
         verbose_name = "Пункт заказа"
