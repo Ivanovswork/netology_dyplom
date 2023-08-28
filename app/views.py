@@ -26,22 +26,51 @@ class ShopViewSet(ModelViewSet):
 
 
 class ShopStatusView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        if type(user) != AnonymousUser:
-            if user.company_id:
-                shop = Shop.objects.get(pk=user.company_id)
-                if shop.status:
-                    shop.status = False
-                else:
-                    shop.status = True
-                shop.save()
-                return Response({"status": "Status of shop has ben changed"})
+        if user.company_id:
+            shop = Shop.objects.get(pk=user.company_id)
+            if shop.status:
+                shop.status = False
             else:
-                return Response({"status": "Something was wrong"})
+                shop.status = True
+            shop.save()
+            return Response({"status": "Status of shop has ben changed"})
         else:
-            return Response({"status": "Anonymous"})
+            return Response({"status": "You are not staff"})
+
+
+@api_view(["GET"])
+def get_orders(request, *args, **kwargs):
+    user = request.user
+    if type(user) != AnonymousUser:
+        if user.company_id:
+            shop = Shop.objects.get(pk=user.company_id)
+            orders = list(Order.objects.all())
+            data = {}
+            for order in orders:
+                a = 0
+                orderitems = list(OrderItem.objects.filter(order=order))
+                if order.state != "basket" or order.state != "basket":
+                    for orderitem in orderitems:
+                        if orderitem.product_info.shop == shop:
+                            if a == 0:
+                                data[order.id] = []
+                                a += 1
+                            data[order.id].append({
+                                "orderitem_id": orderitem.id,
+                                "orderitem_state": order.state,
+                                "product_name": orderitem.product_info.product.name,
+                                "quantity": orderitem.quantity
+                            })
+            return Response(data)
+        else:
+            return Response({"status": "You are not staff"})
+    else:
+        return Response({"status": "Anonymous"})
+
 
 
 class CategoryViewSet(ModelViewSet):

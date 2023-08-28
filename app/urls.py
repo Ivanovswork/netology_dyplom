@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import ShopViewSet, CategoryViewSet, ProductView, RegistrUserView, login, logout, get_product_info, \
-    confirm_email, UserContactView, BasketView, OrderView, confirm_order, ShopStatusView
+    confirm_email, UserContactView, BasketView, OrderView, confirm_order, ShopStatusView, get_orders
 
 r = DefaultRouter()
 r.register('shop', ShopViewSet)
@@ -12,6 +12,7 @@ urlpatterns = [
 
     path("admin/", admin.site.urls),
     path("change_shop_status/", ShopStatusView.as_view()),
+    path("get_orders/", get_orders),
     path("product/", ProductView.as_view()),
     path("registration/", RegistrUserView.as_view()),
     path("login/", login),
