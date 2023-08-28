@@ -1,5 +1,6 @@
 from django.conf.global_settings import EMAIL_HOST_USER
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from rest_framework import status
@@ -24,6 +25,25 @@ class ShopViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, GetShop]
 
 
+class ShopStatusView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        if type(user) != AnonymousUser:
+            if user.company_id:
+                shop = Shop.objects.get(pk=user.company_id)
+                if shop.status:
+                    shop.status = False
+                else:
+                    shop.status = True
+                shop.save()
+                return Response({"status": "Status of shop has ben changed"})
+            else:
+                return Response({"status": "Something was wrong"})
+        else:
+            return Response({"status": "Anonymous"})
+
+
 class CategoryViewSet(ModelViewSet):
     queryset = Shop.objects.all()
     serializer_class = CategorySerializer
@@ -46,30 +66,34 @@ class ProductView(APIView):
             data = yaml.load(file, Loader=yaml.FullLoader)
             # print(data)
 
-            shop = list(Shop.objects.filter(name=data['shop']))[0]
+            shop = list(Shop.objects.filter(name=data['shop']))
 
-            for elem in data['categories']:
-                print(elem)
-                category = list(Category.objects.filter(id=elem['id']))[0]
-                category.shop.add(shop)
+            if shop:
+                shop = shop[0]
+                for elem in data['categories']:
+                    print(elem)
+                    category = list(Category.objects.filter(id=elem['id']))[0]
+                    category.shop.add(shop)
 
-            for elem in data['goods']:
-                category = list(Category.objects.filter(id=int(elem['category'])))[0]
-                p = Product(name=(elem['name'].encode('utf-8').decode()), category=category)
-                p.save()
-                p_i = ProductInfo(
-                    product=p,
-                    shop=shop,
-                    model=elem['model'],
-                    price=elem['price'],
-                    quantity=elem['quantity'],
-                )
-                p_i.save()
-                for name, value in elem['parameters'].items():
-                    param = Param(name=name, value=value, product=p)
-                    param.save()
+                for elem in data['goods']:
+                    category = list(Category.objects.filter(id=int(elem['category'])))[0]
+                    p = Product(name=(elem['name'].encode('utf-8').decode()), category=category)
+                    p.save()
+                    p_i = ProductInfo(
+                        product=p,
+                        shop=shop,
+                        model=elem['model'],
+                        price=elem['price'],
+                        quantity=elem['quantity'],
+                    )
+                    p_i.save()
+                    for name, value in elem['parameters'].items():
+                        param = Param(name=name, value=value, product=p)
+                        param.save()
 
-        return Response({'status': 'OK'})
+                return Response({'status': 'OK'})
+            else:
+                return Response({'status': 'Bad yaml file'})
 
 
 class RegistrUserView(APIView):
@@ -91,24 +115,24 @@ class RegistrUserView(APIView):
                 "destira@mail.ru",
                 f"http://127.0.0.1:8000/confirm/{key.key}/",
                 EMAIL_HOST_USER,
-                ["netology_dyplom@mail.ru"],
+                [user.email],
                 fail_silently=False,
             )
 
-            return Response({'Информация': 'Регистрация прошла успешно'}, status=status.HTTP_200_OK)
+            return Response({'status': 'Registration has been done'}, status=status.HTTP_200_OK)
         return Response(user.errors)
 
 
 @api_view()
 def confirm_email(request, key, *args, **kwargs):
-    try:
-        user_key = ConfirmEmailKey.objects.filter(key=key).first()
+    user_key = ConfirmEmailKey.objects.filter(key=key).first()
+    if user_key:
         user = user_key.user
         user.is_active = True
         user.save()
-        return Response({'Информация': 'Вы успешно подтвердили email'}, status=status.HTTP_200_OK)
-    except:
-        return Response({'Ошибка': 'Пользователь с таким ключем не найден'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'status': 'email has been comfirmed'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'status': 'User with this key not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['POST'])
@@ -141,9 +165,9 @@ def logout(request, *args, **kwargs):
         try:
             # Delete the user's token to logout
             request.user.auth_token.delete()
-            return Response({'Информация': 'Вы успешно вышли из системы.'}, status=status.HTTP_200_OK)
+            return Response({'status': 'Logout has been completed'}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'Ошибка.': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'status.': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["GET"])
@@ -151,8 +175,8 @@ def get_product_info(request, product_id):
     try:
         product = list(Product.objects.filter(id=product_id))[0]
     except:
-        return Response({'Ошибка': 'Данный товар не найден.'}, status=status.HTTP_404_NOT_FOUND)
-    prinf = list(ProductInfo.objects.filter(product=product))[0]
+        return Response({'status': 'This product is not found'}, status=status.HTTP_404_NOT_FOUND)
+    prinf = ProductInfo.objects.filter(product=product).first()
     data = {
         "id": product.id,
         "name": product.name,
@@ -184,13 +208,13 @@ class UserContactView(APIView):
                 "telephone_number": contact.t_number
             })
         else:
-            return Response({"Информация": "Ваши контактные данные не указаны"})
+            return Response({"status": "Your contact details are not specified"})
 
     def post(self, request, *args, **kwargs):
         user = request.user
         contact = Contact.objects.filter(user=user)
         if contact:
-            return Response({"Информация": "У вас уже имеется контактная информация"})
+            return Response({"status": "Your contact details has been specified"})
         else:
             data = request.data
             form = ContactForm(data)
@@ -210,7 +234,7 @@ class UserContactView(APIView):
         contact = Contact.objects.filter(user=user)
         print(contact.first().adress)
         if not contact:
-            return Response({"Информация": "Изменять нечего"})
+            return Response({"status": "Your contact details are not specified"})
         else:
             data = request.data
             form = ContactForm(data)
@@ -228,7 +252,7 @@ class UserContactView(APIView):
         user = request.user
         contact = Contact.objects.filter(user=user)
         if not contact:
-            return Response({"Информация": "У вас нет контактной информации"})
+            return Response({"status": "Your contact details are not specified"})
         else:
             try:
                 contact.delete()
@@ -242,8 +266,9 @@ class BasketView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        basket = list(Order.objects.filter(user=user, state='basket'))[-1]
+        basket = list(Order.objects.filter(user=user, state='basket'))
         if basket:
+            basket = basket[-1]
             orderitems = OrderItem.objects.filter(order=basket)
             response = {}
             for i, elem in enumerate(orderitems):
@@ -295,13 +320,14 @@ class BasketView(APIView):
 
     def patch(self, request, *args, **kwargs):
         user = request.user
-        basket = list(Order.objects.filter(user=user, state='basket'))[-1]
+        basket = list(Order.objects.filter(user=user, state='basket'))
         if basket:
+            basket = basket[-1]
             data = request.data
             form = OrderItemUpdateForm(data)
             if form.is_valid():
                 order_item = OrderItem.objects.filter(id=data['orderitem_id']).first()
-                if not(order_item):
+                if not (order_item):
                     return Response({"status": "Bad request", "Reason": "bad order item id"})
                 if order_item.order != basket:
                     return Response({"status": "Bad request", "Reason": "bad order item id"})
@@ -324,3 +350,89 @@ class BasketView(APIView):
             return Response({"status": "OK"})
         else:
             return Response({"status": "No Items"})
+
+
+class OrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        orders = list(Order.objects.filter(user=user, state='confirmed')) + \
+                 list(Order.objects.filter(user=user, state='new')) + \
+                 list(Order.objects.filter(user=user, state='assembled')) + \
+                 list(Order.objects.filter(user=user, state='sent')) + \
+                 list(Order.objects.filter(user=user, state='delivered'))
+        print(orders)
+        data = {}
+        if orders:
+            for i, order in enumerate(orders):
+                data[i] = {
+                    "order_id": order.id,
+                    "order.state": order.state
+                }
+            return Response(data)
+        else:
+            return Response({"status": "You dont't have any orders"})
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        order = list(Order.objects.filter(user=user, state='basket'))
+        if order:
+            order = order[-1]
+            orderitems = list(OrderItem.objects.filter(order=order))
+            if orderitems:
+                order.state = 'new'
+                order.save()
+                key = ConfirmEmailKey.objects.filter(user=user).first()
+
+                send_mail(
+                    "destira@mail.ru",
+                    f"http://127.0.0.1:8000/confirm_order/{key.key}/{order.id}/",
+                    EMAIL_HOST_USER,
+                    [user.email],
+                    fail_silently=False,
+                )
+
+                return Response({"status": "OK"})
+            else:
+                return Response({"status": "No items in basket"})
+        else:
+            return Response({"status": "No basket"})
+
+
+@api_view()
+def confirm_order(request, key, id, *args, **kwargs):
+    try:
+        user_key = ConfirmEmailKey.objects.filter(key=key).first()
+        user = user_key.user
+        order = Order.objects.filter(user=user, id=id, state='new').first()
+        if order:
+            order.state = 'confirmed'
+            order.save()
+
+            send_mail(
+                "destira@mail.ru",
+                f"Ваш заказ подтвержен. Его номер {order.id}. Спасибо за выбор нашего сервиса",
+                EMAIL_HOST_USER,
+                [user.email],
+                fail_silently=False,
+            )
+
+            orderitems = list(OrderItem.objects.filter(order=order))
+            for orderitem in orderitems:
+                shop_id = orderitem.product_info.shop.id
+                staff = [user.email for user in list(User.objects.filter(company_id=shop_id))]
+                send_mail(
+                    "destira@mail.ru",
+                    f"В вашем магазине был совершен заказ на товар: {orderitem.product_info.product.name} в количестве "
+                    f"{orderitem.quantity}",
+                    EMAIL_HOST_USER,
+                    staff,
+                    fail_silently=False,
+                )
+
+            return Response({"status": "OK"})
+        else:
+            return Response({"status": "order has already confirmed"})
+    except Exception as e:
+        return Response({'status.': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
