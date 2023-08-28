@@ -308,13 +308,16 @@ class BasketView(APIView):
             quantity = data['quantity']
             if quantity > productinfo.quantity:
                 return Response({"status": "Bad request", "Reason": "Quantity"})
-            orderitem = OrderItem(
-                order=basket,
-                product_info=productinfo,
-                quantity=quantity
-            )
-            orderitem.save()
-            return Response({"status": "OK"})
+            if productinfo.shop.status:
+                orderitem = OrderItem(
+                    order=basket,
+                    product_info=productinfo,
+                    quantity=quantity
+                )
+                orderitem.save()
+                return Response({"status": "OK"})
+            else:
+                return Response({"status": "Shop is not active"})
         else:
             return Response({"status": "Bad request"})
 
