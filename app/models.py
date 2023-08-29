@@ -211,6 +211,7 @@ class OrderItem(models.Model):
 
     class Meta:
         verbose_name = "Пункт заказа"
+        verbose_name_plural = "Пункты заказов"
 
     def __str__(self):
         return f"Пункт заказа №{self.order.id} под общим номером {self.id}"

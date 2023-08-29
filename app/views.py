@@ -53,9 +53,9 @@ class ShopStatusView(APIView):
             else:
                 shop.status = True
             shop.save()
-            return Response({"status": "Status of shop has ben changed"})
+            return Response({"status": "Status of shop has ben changed"}, status=status.HTTP_200_OK)
         else:
-            return Response({"status": "You are not staff"})
+            return Response({"status": "You are not staff"}, status=status.HTTP_403_FORBIDDEN)
 
 
 @api_view(["GET"])
@@ -83,11 +83,11 @@ def get_orders(request, *args, **kwargs):
                                     "quantity": orderitem.quantity,
                                 }
                             )
-            return Response(data)
+            return Response(data, status=status.HTTP_200_OK)
         else:
-            return Response({"status": "You are not staff"})
+            return Response({"status": "You are not staff"}, status=status.HTTP_403_FORBIDDEN)
     else:
-        return Response({"status": "Anonymous"})
+        return Response({"status": "Authentication credentials were not provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class CategoryViewSet(ModelViewSet):
@@ -141,9 +141,9 @@ class ProductView(APIView):
                         param = Param(name=name, value=value, product=p)
                         param.save()
 
-                return Response({"status": "OK"})
+                return Response({"status": "OK"}, status=status.HTTP_200_OK)
             else:
-                return Response({"status": "Bad yaml file"})
+                return Response({"status": "Bad yaml file"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegistrUserView(APIView):
@@ -212,7 +212,7 @@ def login(request, *args, **kwargs):
             return Response({"token": token.key}, status=status.HTTP_200_OK)
 
         return Response(
-            {"Ошибка": "Ошибка входа в систему"}, status=status.HTTP_401_UNAUTHORIZED
+            {"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -253,7 +253,7 @@ def get_product_info(request, product_id):
     params = list(Param.objects.filter(product=product))
     for param in params:
         data["parameters"][param.name] = param.value
-    return Response(data)
+    return Response(data, status=status.HTTP_200_OK)
 
 
 class UserContactView(APIView):
@@ -280,7 +280,7 @@ class UserContactView(APIView):
         user = request.user
         contact = Contact.objects.filter(user=user)
         if contact:
-            return Response({"status": "Your contact details has been specified"})
+            return Response({"status": "Your contact details has been specified"}, status=status.HTTP_200_OK)
         else:
             data = request.data
             form = ContactForm(data)
@@ -291,18 +291,18 @@ class UserContactView(APIView):
                     )
                     contact.save()
                 except:
-                    return Response({"status": "Bad request"})
+                    return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"status": "Bad request"})
+                return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"status": "OK"})
+            return Response({"status": "OK"}, status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
         user = request.user
         contact = Contact.objects.filter(user=user)
         print(contact.first().adress)
         if not contact:
-            return Response({"status": "Your contact details are not specified"})
+            return Response({"status": "Your contact details are not specified"}, status=status.HTTP_200_OK)
         else:
             data = request.data
             form = ContactForm(data)
@@ -310,23 +310,23 @@ class UserContactView(APIView):
                 try:
                     contact.update(adress=data["adress"], t_number=data["t_number"])
                 except:
-                    return Response({"status": "Bad request"})
+                    return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({"status": "Bad request"})
+                return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"status": "OK"})
+            return Response({"status": "OK"}, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         user = request.user
         contact = Contact.objects.filter(user=user)
         if not contact:
-            return Response({"status": "Your contact details are not specified"})
+            return Response({"status": "Your contact details are not specified"}, status=status.HTTP_200_OK)
         else:
             try:
                 contact.delete()
             except:
-                return Response({"status": "Bad request"})
-        return Response({"status": "OK"})
+                return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "OK"}, status=status.HTTP_200_OK)
 
 
 class BasketView(APIView):
@@ -349,9 +349,9 @@ class BasketView(APIView):
                     "model": elem.product_info.model,
                     "price": elem.product_info.price,
                 }
-            return Response(response)
+            return Response(response, status=status.HTTP_200_OK)
         else:
-            return Response({"status": "No Items"})
+            return Response({"status": "No Items"}, status=status.HTTP_403_FORBIDDEN)
 
     def post(self, request, *args, **kwargs):
         user = request.user
@@ -372,21 +372,21 @@ class BasketView(APIView):
                     {
                         "status": "Bad request",
                         "Reason": "Product has already been in basket",
-                    }
+                    }, status=status.HTTP_400_BAD_REQUEST
                 )
             quantity = data["quantity"]
             if quantity > productinfo.quantity:
-                return Response({"status": "Bad request", "Reason": "Quantity"})
+                return Response({"status": "Bad request", "Reason": "Quantity"}, status=status.HTTP_400_BAD_REQUEST)
             if productinfo.shop.status:
                 orderitem = OrderItem(
                     order=basket, product_info=productinfo, quantity=quantity
                 )
                 orderitem.save()
-                return Response({"status": "OK"})
+                return Response({"status": "OK"}, status=status.HTTP_200_OK)
             else:
-                return Response({"status": "Shop is not active"})
+                return Response({"status": "Shop is not active"}, status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
-            return Response({"status": "Bad request"})
+            return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, *args, **kwargs):
         user = request.user
@@ -399,31 +399,35 @@ class BasketView(APIView):
                 order_item = OrderItem.objects.filter(id=data["orderitem_id"]).first()
                 if not (order_item):
                     return Response(
-                        {"status": "Bad request", "Reason": "bad order item id"}
+                        {"status": "Bad request", "Reason": "bad order item id"},
+                        status=status.HTTP_400_BAD_REQUEST
                     )
                 if order_item.order != basket:
                     return Response(
-                        {"status": "Bad request", "Reason": "bad order item id"}
+                        {"status": "Bad request", "Reason": "bad order item id"},
+                        status=status.HTTP_400_BAD_REQUEST
                     )
                 quantity = data["quantity"]
                 if quantity > order_item.product_info.quantity:
-                    return Response({"status": "Bad request", "Reason": "Quantity"})
+                    return Response({"status": "Bad request", "Reason": "Quantity"},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                    )
                 order_item.quantity = quantity
                 order_item.save()
-                return Response({"status": "OK"})
+                return Response({"status": "OK"}, status=status.HTTP_200_OK)
             else:
-                return Response({"status": "Bad request"})
+                return Response({"status": "Bad request"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"status": "No Items"})
+            return Response({"status": "No Items"}, status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, *args, **kwargs):
         user = request.user
         basket = list(Order.objects.filter(user=user, state="basket"))[-1]
         if basket:
             OrderItem.objects.filter(order=basket).delete()
-            return Response({"status": "OK"})
+            return Response({"status": "OK"}, status=status.HTTP_200_OK)
         else:
-            return Response({"status": "No Items"})
+            return Response({"status": "No Items"}, status=status.HTTP_403_FORBIDDEN)
 
 
 class OrderView(APIView):
@@ -442,10 +446,10 @@ class OrderView(APIView):
         data = {}
         if orders:
             for i, order in enumerate(orders):
-                data[i] = {"order_id": order.id, "order.state": order.state}
-            return Response(data)
+                data[i + 1] = {"order_id": order.id, "order.state": order.state}
+            return Response(data, status=status.HTTP_200_OK)
         else:
-            return Response({"status": "You dont't have any orders"})
+            return Response({"status": "You dont't have any orders"}, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         user = request.user
@@ -466,11 +470,11 @@ class OrderView(APIView):
                     fail_silently=False,
                 )
 
-                return Response({"status": "OK"})
+                return Response({"status": "OK"}, status=status.HTTP_200_OK)
             else:
-                return Response({"status": "No items in basket"})
+                return Response({"status": "No items in basket"}, status=status.HTTP_403_FORBIDDEN)
         else:
-            return Response({"status": "No basket"})
+            return Response({"status": "No basket"}, status=status.HTTP_403_FORBIDDEN)
 
 
 @api_view()

@@ -30,10 +30,3 @@ class IsStaff(BasePermission):
             print(request.user.company_id)
         return request.user.is_staff and request.user.company_id == shop.id
 
-
-#
-# class IsSuperUserToRead(BasePermission):
-#     def has_permission(self, request, view):
-#         if request.method == "POST":
-#             return True
-#         return request.user.is_superuser
