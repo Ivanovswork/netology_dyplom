@@ -147,5 +147,5 @@ EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
-CELERY_BROKER_URL = "redis://localhost:6379"
-CELERY_RESULT_BACKEND = "redis://localhost:6379"
+CELERY_BROKER_URL = "redis://localhost:6379/1"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/2"

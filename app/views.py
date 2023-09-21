@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
+from .task import send_email
 from .models import (
     Shop,
     Product,
@@ -161,13 +162,7 @@ class RegistrUserView(APIView):
             key = ConfirmEmailKey(user=user)
             key.save()
 
-            send_mail(
-                "destira@mail.ru",
-                f"http://127.0.0.1:8000/confirm/{key.key}/",
-                EMAIL_HOST_USER,
-                [user.email],
-                fail_silently=False,
-            )
+            send_email(key.key, user.email)
 
             return Response(
                 {"status": "Registration has been done"}, status=status.HTTP_200_OK
