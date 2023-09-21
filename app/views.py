@@ -9,7 +9,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from .task import send_email
+from .task import send_email, send_email_about_comfirming_order, send_email_about_comfirmed_order, \
+    send_email_about_order_for_shop
 from .models import (
     Shop,
     Product,
@@ -457,13 +458,7 @@ class OrderView(APIView):
                 order.save()
                 key = ConfirmEmailKey.objects.filter(user=user).first()
 
-                send_mail(
-                    "destira@mail.ru",
-                    f"http://127.0.0.1:8000/confirm_order/{key.key}/{order.id}/",
-                    EMAIL_HOST_USER,
-                    [user.email],
-                    fail_silently=False,
-                )
+                send_email_about_comfirming_order(key.key, order.id, user.email)
 
                 return Response({"status": "OK"}, status=status.HTTP_200_OK)
             else:
@@ -482,13 +477,7 @@ def confirm_order(request, key, id, *args, **kwargs):
             order.state = "confirmed"
             order.save()
 
-            send_mail(
-                "destira@mail.ru",
-                f"Ваш заказ подтвержен. Его номер {order.id}. Спасибо за выбор нашего сервиса",
-                EMAIL_HOST_USER,
-                [user.email],
-                fail_silently=False,
-            )
+            send_email_about_comfirmed_order(order.id, user.email)
 
             orderitems = list(OrderItem.objects.filter(order=order))
             for orderitem in orderitems:
@@ -496,14 +485,8 @@ def confirm_order(request, key, id, *args, **kwargs):
                 staff = [
                     user.email for user in list(User.objects.filter(company_id=shop_id))
                 ]
-                send_mail(
-                    "destira@mail.ru",
-                    f"В вашем магазине был совершен заказ на товар: {orderitem.product_info.product.name} в количестве "
-                    f"{orderitem.quantity}",
-                    EMAIL_HOST_USER,
-                    staff,
-                    fail_silently=False,
-                )
+
+                send_email_about_order_for_shop(orderitem.product_info.product.name, orderitem.quantity, staff)
 
             return Response({"status": "OK"})
         else:
