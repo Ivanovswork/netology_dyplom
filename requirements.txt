@@ -8,3 +8,5 @@ django-rest-passwordreset
 celery
 docker-compose
 docker
+pytest-django
+model_bakery
