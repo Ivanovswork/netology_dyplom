@@ -4,9 +4,10 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, JsonResponse
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from .task import send_email, send_email_about_comfirming_order, send_email_about_comfirmed_order, \
@@ -229,6 +230,7 @@ def logout(request, *args, **kwargs):
 
 
 @api_view(["GET"])
+@throttle_classes([UserRateThrottle])
 def get_product_info(request, product_id):
     try:
         product = list(Product.objects.filter(id=product_id))[0]
