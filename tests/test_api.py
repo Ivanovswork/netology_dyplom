@@ -35,6 +35,14 @@ def auth_user():
     return user
 
 
+@pytest.fixture
+def auth_client():
+    client = APIClient()
+    user = User.objects.create(email="test@mail.ru", password="testtest")
+    client.force_authenticate(user)
+    return client
+
+
 @pytest.mark.django_db
 def test_login_loguot(client):
     user = User.objects.create(email="test@mail.ru", password="testtest")
@@ -74,3 +82,45 @@ def test_registration(client):
     data = response.json()
 
     assert data['status'] == "Registration has been done"
+
+
+@pytest.mark.django_db
+def test_contact_info(auth_client):
+    data = {
+        "adress": "adress",
+        "t_number": "23123123123123"
+    }
+    response = auth_client.post('/contact_info/', data=data, format="json")
+    assert response.status_code == 200
+    data = response.json()
+    assert data['status'] == "OK"
+
+    response = auth_client.get('/contact_info/')
+    assert response.status_code == 200
+
+    data = {
+        "adress": "adress1",
+        "t_number": "2312312312312311"
+    }
+    response = auth_client.put('/contact_info/', data=data, format='json')
+    assert response.status_code == 200
+    data = response.json()
+    assert data['status'] == "OK"
+
+    response = auth_client.delete('/contact_info/')
+    assert response.status_code == 200
+    data = response.json()
+    assert data['status'] == "OK"
+
+
+@pytest.mark.django_db
+def test_product(product_factory, auth_client, shop, client):
+    products = product_factory(_quantity=10)
+
+    response = auth_client.get("/product/")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert len(data) == len(products)
