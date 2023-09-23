@@ -57,3 +57,20 @@ def test_login_loguot(client):
     assert response.status_code == 200
 
     assert response.json()['status'] == "Logout has been completed"
+
+
+@pytest.mark.django_db
+def test_registration(client):
+    data = {
+        "email": 'test@mail.ru',
+        "username": "test",
+        "password": "testtest",
+        "password2": "testtest"
+    }
+    response = client.post('/registration/', data=data, format='json')
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data['status'] == "Registration has been done"
