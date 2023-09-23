@@ -10,3 +10,4 @@ docker-compose
 docker
 pytest-django
 model_bakery
+pytest-cov

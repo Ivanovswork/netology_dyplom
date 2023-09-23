@@ -1,0 +1,2 @@
+[run]
+omit=tests/*,.venv/*,manage.py,app/migrations/*,app/__init__.py*,app/admin.py*,app/apps.py*,app/asgi.py*,app/celery.py*,app/forms.py*,app/models.py*,app/permissions.py*,app/serializers.py*,app/settings.py*,app/task.py*,app/urls.py*,app/wsgi.py*,app/test.py*,__init__.py*

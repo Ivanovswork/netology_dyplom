@@ -36,7 +36,7 @@ def auth_user():
 
 
 @pytest.mark.django_db
-def test_login(client):
+def test_login_loguot(client):
     user = User.objects.create(email="test@mail.ru", password="testtest")
     data = {
         "username": "test@mail.ru",
@@ -46,4 +46,14 @@ def test_login(client):
 
     assert response.status_code == 200
 
+    data = response.json()
+    token = data['token']
 
+    assert token
+
+    client.force_authenticate(user)
+    response = client.post('/logout/')
+
+    assert response.status_code == 200
+
+    assert response.json()['status'] == "Logout has been completed"
